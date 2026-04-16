@@ -890,6 +890,7 @@ export default function AITrainingPanel({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5"><Settings className="h-3.5 w-3.5" /> Provider</Label>
                   <Select
@@ -899,20 +900,72 @@ export default function AITrainingPanel({
                     <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="gemini">Gemini</SelectItem>
+                      <SelectItem value="grok">Grok</SelectItem>
+                      <SelectItem value="claude">Claude</SelectItem>
+                      <SelectItem value="deepseek">DeepSeek</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> API Key</Label>
-                  <Input
-                    type="password"
-                    value={aiConfigForm.apiKey}
-                    onChange={(e) => setAiConfigForm(prev => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="sk-..."
-                  />
-                </div>
+                {/* API Key fields for each provider */}
+                {aiConfigForm.provider === "openai" && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> API Key</Label>
+                    <Input
+                      type="password"
+                      value={aiConfigForm.apiKey}
+                      onChange={(e) => setAiConfigForm(prev => ({ ...prev, apiKey: e.target.value }))}
+                      placeholder="sk-..."
+                    />
+                  </div>
+                )}
+                {aiConfigForm.provider === "gemini" && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> Gemini API Key</Label>
+                    <Input
+                      type="password"
+                      value={aiConfigForm.geminiApiKey || ""}
+                      onChange={(e) => setAiConfigForm(prev => ({ ...prev, geminiApiKey: e.target.value }))}
+                      placeholder="Gemini API Key"
+                    />
+                  </div>
+                )}
+                {aiConfigForm.provider === "grok" && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> Grok API Key</Label>
+                    <Input
+                      type="password"
+                      value={aiConfigForm.grokApiKey || ""}
+                      onChange={(e) => setAiConfigForm(prev => ({ ...prev, grokApiKey: e.target.value }))}
+                      placeholder="Grok API Key"
+                    />
+                  </div>
+                )}
+                {aiConfigForm.provider === "claude" && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> Claude API Key</Label>
+                    <Input
+                      type="password"
+                      value={aiConfigForm.claudeApiKey || ""}
+                      onChange={(e) => setAiConfigForm(prev => ({ ...prev, claudeApiKey: e.target.value }))}
+                      placeholder="Claude API Key"
+                    />
+                  </div>
+                )}
+                {aiConfigForm.provider === "deepseek" && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> DeepSeek API Key</Label>
+                    <Input
+                      type="password"
+                      value={aiConfigForm.deepseekApiKey || ""}
+                      onChange={(e) => setAiConfigForm(prev => ({ ...prev, deepseekApiKey: e.target.value }))}
+                      placeholder="DeepSeek API Key"
+                    />
+                  </div>
+                )}
 
+                {/* Model selection for each provider */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5"><Cpu className="h-3.5 w-3.5" /> Model</Label>
                   <Select
@@ -921,17 +974,37 @@ export default function AITrainingPanel({
                   >
                     <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
-                      <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
-                      <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>
-                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                      <SelectItem value="o3-mini">o3-mini</SelectItem>
-                      <SelectItem value="o1">o1</SelectItem>
-                      <SelectItem value="o1-mini">o1-mini</SelectItem>
-                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                      <SelectItem value="gpt-4">GPT-4</SelectItem>
-                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                      {aiConfigForm.provider === "openai" && <>
+                        <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                        <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
+                        <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>
+                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                        <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                        <SelectItem value="o3-mini">o3-mini</SelectItem>
+                        <SelectItem value="o1">o1</SelectItem>
+                        <SelectItem value="o1-mini">o1-mini</SelectItem>
+                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                        <SelectItem value="gpt-4">GPT-4</SelectItem>
+                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                      </>}
+                      {aiConfigForm.provider === "gemini" && <>
+                        <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                        <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                        <SelectItem value="gemini-ultra">Gemini Ultra</SelectItem>
+                      </>}
+                      {aiConfigForm.provider === "grok" && <>
+                        <SelectItem value="grok-1">Grok-1</SelectItem>
+                        <SelectItem value="grok-1.5">Grok-1.5</SelectItem>
+                      </>}
+                      {aiConfigForm.provider === "claude" && <>
+                        <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
+                        <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
+                        <SelectItem value="claude-3-haiku">Claude 3 Haiku</SelectItem>
+                      </>}
+                      {aiConfigForm.provider === "deepseek" && <>
+                        <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
+                        <SelectItem value="deepseek-coder">DeepSeek Coder</SelectItem>
+                      </>}
                     </SelectContent>
                   </Select>
                 </div>

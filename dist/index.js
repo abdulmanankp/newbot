@@ -1219,6 +1219,7 @@ var init_schema = __esm({
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
       channelId: varchar("channel_id").references(() => channels.id),
       provider: text("provider").notNull().default("openai"),
+      // openai, gemini, grok, claude, deepseek
       apiKey: text("api_key").notNull(),
       model: text("model").notNull().default("gpt-4o-mini"),
       endpoint: text("endpoint").default("https://api.openai.com/v1"),
@@ -1226,7 +1227,11 @@ var init_schema = __esm({
       // string for consistency
       maxTokens: text("max_tokens").default("2048"),
       isActive: boolean("is_active").default(false),
-      // NEW COLUMN
+      // Optional fields for other providers
+      geminiApiKey: text("gemini_api_key"),
+      grokApiKey: text("grok_api_key"),
+      claudeApiKey: text("claude_api_key"),
+      deepseekApiKey: text("deepseek_api_key"),
       words: text("words").array().default(sql`ARRAY[]::text[]`),
       // trigger words or phrases
       createdAt: timestamp("created_at").defaultNow(),
@@ -24515,6 +24520,10 @@ var createAISettings = async (req, res) => {
       provider,
       channelId,
       apiKey,
+      geminiApiKey,
+      grokApiKey,
+      claudeApiKey,
+      deepseekApiKey,
       model,
       endpoint,
       temperature,
@@ -24522,8 +24531,8 @@ var createAISettings = async (req, res) => {
       isActive,
       words
     } = req.body;
-    if (!apiKey) {
-      return res.status(400).json({ error: "API key is required" });
+    if (provider === "openai" && !apiKey || provider === "gemini" && !geminiApiKey || provider === "grok" && !grokApiKey || provider === "claude" && !claudeApiKey || provider === "deepseek" && !deepseekApiKey) {
+      return res.status(400).json({ error: "API key is required for the selected provider" });
     }
     if (channelId) {
       const existing = await db.select().from(aiSettings).where(eq39(aiSettings.channelId, channelId)).limit(1);
@@ -24551,6 +24560,10 @@ var createAISettings = async (req, res) => {
       provider: provider || "openai",
       channelId: channelId || null,
       apiKey,
+      geminiApiKey,
+      grokApiKey,
+      claudeApiKey,
+      deepseekApiKey,
       model: model || "gpt-4o-mini",
       endpoint: endpoint || "https://api.openai.com/v1",
       temperature: temperature?.toString() || "0.7",
@@ -24567,7 +24580,7 @@ var createAISettings = async (req, res) => {
 var updateAISettings = async (req, res) => {
   try {
     const { id } = req.params;
-    const { apiKey, provider, model, endpoint, temperature, maxTokens, isActive, words } = req.body;
+    const { apiKey, geminiApiKey, grokApiKey, claudeApiKey, deepseekApiKey, provider, model, endpoint, temperature, maxTokens, isActive, words } = req.body;
     const existing = await db.query.aiSettings.findFirst({
       where: (table, { eq: eq54 }) => eq54(table.id, id)
     });
@@ -24590,6 +24603,10 @@ var updateAISettings = async (req, res) => {
     const [updated] = await db.update(aiSettings).set({
       provider: provider ?? existing.provider,
       apiKey: apiKey ?? existing.apiKey,
+      geminiApiKey: geminiApiKey ?? existing.geminiApiKey,
+      grokApiKey: grokApiKey ?? existing.grokApiKey,
+      claudeApiKey: claudeApiKey ?? existing.claudeApiKey,
+      deepseekApiKey: deepseekApiKey ?? existing.deepseekApiKey,
       channelId: existing.channelId,
       model: model ?? existing.model,
       endpoint: endpoint ?? existing.endpoint,
