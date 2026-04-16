@@ -1,0 +1,14 @@
+# Prevent direct access to PHP files except index.php
+<FilesMatch "^(?!index\.php$).+\.php$">
+  Deny from all
+</FilesMatch>
+
+# Allow access to uploaded files
+<Directory "uploads">
+  Allow from all
+</Directory>
+
+# Basic security headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
