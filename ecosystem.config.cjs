@@ -1,5 +1,18 @@
 const instances = parseInt(process.env.INSTANCES || "1", 10);
 
+const url = `https://join.mslpakistan.org`;
+const interval = 600000;
+
+function reloadWebsite() {
+  axios
+    .get(url)
+    .then((response) => {
+      console.log("website reloded");
+    })
+    .catch((error) => {
+      console.error(`Error : ${error.message}`);
+    });
+}
 module.exports = {
   apps: [
     {
