@@ -24,14 +24,22 @@
 // neonConfig.webSocketConstructor = ws;
 
 
-import dns from "dns";
 import { Pool } from "pg";
 import { DIPLOY_BRAND } from "@diploy/core";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 import "dotenv/config";
 
-dns.setDefaultResultOrder("ipv4first");
+function buildPoolConfig(connectionString: string) {
+  const url = new URL(connectionString);
+  const isLocalDatabase = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  const useSsl = !isLocalDatabase || url.searchParams.get("sslmode") === "require";
+
+  return {
+    connectionString: url.toString(),
+    ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+  };
+}
 
 
 if (!process.env.DATABASE_URL) {
@@ -40,9 +48,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+const primaryPoolConfig = buildPoolConfig(process.env.DATABASE_URL);
+
 export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    family: 4,
+    ...primaryPoolConfig,
     max: parseInt(process.env.DB_POOL_MAX || '25', 10),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
@@ -57,8 +66,7 @@ export const pool = new Pool({
 
   const readPool = process.env.DATABASE_READ_URL
     ? new Pool({
-        connectionString: process.env.DATABASE_READ_URL,
-        family: 4,
+        ...buildPoolConfig(process.env.DATABASE_READ_URL),
         max: parseInt(process.env.DB_POOL_MAX || '25', 10),
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,

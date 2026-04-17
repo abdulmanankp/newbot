@@ -1710,7 +1710,16 @@ var init_schema = __esm({
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import "dotenv/config";
-var pool, db, readPool, dbRead;
+function buildPoolConfig(connectionString) {
+  const url = new URL(connectionString);
+  const isLocalDatabase = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  const useSsl = !isLocalDatabase || url.searchParams.get("sslmode") === "require";
+  return {
+    connectionString: url.toString(),
+    ssl: useSsl ? { rejectUnauthorized: false } : void 0
+  };
+}
+var primaryPoolConfig, pool, db, readPool, dbRead;
 var init_db = __esm({
   "server/db.ts"() {
     "use strict";
@@ -1721,9 +1730,9 @@ var init_db = __esm({
         "DATABASE_URL must be set. Did you forget to provision a database?"
       );
     }
+    primaryPoolConfig = buildPoolConfig(process.env.DATABASE_URL);
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      family: 4,
+      ...primaryPoolConfig,
       max: parseInt(process.env.DB_POOL_MAX || "25", 10),
       idleTimeoutMillis: 3e4,
       connectionTimeoutMillis: 5e3,
@@ -1734,8 +1743,7 @@ var init_db = __esm({
     });
     db = drizzle(pool, { schema: schema_exports });
     readPool = process.env.DATABASE_READ_URL ? new Pool({
-      connectionString: process.env.DATABASE_READ_URL,
-      family: 4,
+      ...buildPoolConfig(process.env.DATABASE_READ_URL),
       max: parseInt(process.env.DB_POOL_MAX || "25", 10),
       idleTimeoutMillis: 3e4,
       connectionTimeoutMillis: 5e3,
