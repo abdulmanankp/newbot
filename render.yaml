@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: whatsapp-chatbot
+    env: node
+    plan: standard
+    buildCommand: npm install --include=dev && npm run build && npm run db:push -- --force
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # Add your other environment variables below:
+      # - key: DATABASE_URL
+      #   value: your-database-url
+      # - key: STRIPE_SECRET_KEY
+      #   value: your-stripe-key
