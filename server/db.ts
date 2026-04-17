@@ -24,11 +24,14 @@
 // neonConfig.webSocketConstructor = ws;
 
 
+import dns from "dns";
 import { Pool } from "pg";
 import { DIPLOY_BRAND } from "@diploy/core";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 import "dotenv/config";
+
+dns.setDefaultResultOrder("ipv4first");
 
 
 if (!process.env.DATABASE_URL) {
@@ -39,7 +42,7 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-  family: 4,
+    family: 4,
     max: parseInt(process.env.DB_POOL_MAX || '25', 10),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,

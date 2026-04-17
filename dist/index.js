@@ -1723,6 +1723,7 @@ var init_db = __esm({
     }
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      family: 4,
       max: parseInt(process.env.DB_POOL_MAX || "25", 10),
       idleTimeoutMillis: 3e4,
       connectionTimeoutMillis: 5e3,
@@ -1734,6 +1735,7 @@ var init_db = __esm({
     db = drizzle(pool, { schema: schema_exports });
     readPool = process.env.DATABASE_READ_URL ? new Pool({
       connectionString: process.env.DATABASE_READ_URL,
+      family: 4,
       max: parseInt(process.env.DB_POOL_MAX || "25", 10),
       idleTimeoutMillis: 3e4,
       connectionTimeoutMillis: 5e3,
