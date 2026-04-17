@@ -39,6 +39,7 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+  family: 4,
     max: parseInt(process.env.DB_POOL_MAX || '25', 10),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
@@ -54,6 +55,7 @@ export const pool = new Pool({
   const readPool = process.env.DATABASE_READ_URL
     ? new Pool({
         connectionString: process.env.DATABASE_READ_URL,
+        family: 4,
         max: parseInt(process.env.DB_POOL_MAX || '25', 10),
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
