@@ -29032,8 +29032,7 @@ io2.on("connection", (socket) => {
       try {
         await storage.updateConversation(conversationId, {
           status: "assigned",
-          assignedTo: agentId,
-          assignedToName: agentName
+          assignedTo: agentId
         });
       } catch (error) {
         console.error("Error updating conversation:", error);
@@ -29064,8 +29063,7 @@ io2.on("connection", (socket) => {
       try {
         await storage.updateConversation(conversationId, {
           status: "assigned",
-          assignedTo: agentId,
-          assignedToName: agentName
+          assignedTo: agentId
         });
       } catch (error) {
         console.error("Error updating conversation:", error);
@@ -29172,7 +29170,9 @@ io2.on("connection", (socket) => {
   socket.on("conversation_opened", async ({ conversationId }) => {
     console.log(`Conversation opened: ${conversationId}`);
     try {
-      await storage.markMessagesAsRead(conversationId);
+      await storage.updateConversation(conversationId, {
+        unreadCount: 0
+      });
       socket.to(`conversation:${conversationId}`).emit("messages_read", {
         conversationId
       });
@@ -29214,7 +29214,7 @@ io2.on("connection", (socket) => {
     connectedUsers.delete(socket.id);
   });
 });
-io2.getOnlineAgents = function(siteId) {
+var getOnlineAgents = (siteId) => {
   const agents = [];
   connectedUsers.forEach((user) => {
     if (user.role === "agent" || user.role === "admin") {
@@ -29224,10 +29224,6 @@ io2.getOnlineAgents = function(siteId) {
     }
   });
   return agents;
-};
-io2.isConversationActive = function(conversationId) {
-  const room = conversationRooms.get(conversationId);
-  return room && room.size > 0;
 };
 app.use((_req, res, next) => {
   res.setHeader(DIPLOY_HEADER_KEY, DIPLOY_HEADER_VALUE);
@@ -29257,7 +29253,7 @@ app.use(
 );
 app.get("/api/agents/online", (req, res) => {
   const { siteId } = req.query;
-  const agents = io2.getOnlineAgents?.(siteId) || [];
+  const agents = getOnlineAgents(siteId);
   res.json({ agents });
 });
 initializeUploadsDirectory();
@@ -29308,8 +29304,21 @@ app.use((req, res, next) => {
   try {
     await runStartupMigration(pool);
   } catch (err) {
-    console.error("[startup-migration] Fatal \u2014 aborting server startup:", err);
-    process.exit(1);
+    const error = err;
+    const transientNetworkCodes = /* @__PURE__ */ new Set([
+      "ENOTFOUND",
+      "ENETUNREACH",
+      "ECONNREFUSED",
+      "ETIMEDOUT"
+    ]);
+    if (error?.code && transientNetworkCodes.has(error.code)) {
+      console.warn(
+        `[startup-migration] Skipping startup migration because the database is not reachable (${error.code}). The server will continue booting.`
+      );
+    } else {
+      console.error("[startup-migration] Fatal \u2014 aborting server startup:", err);
+      process.exit(1);
+    }
   }
   const server = await registerRoutes(app, httpServer);
   app.use((err, _req, res, _next) => {
@@ -29334,6 +29343,14 @@ app.use((req, res, next) => {
   httpServer.listen(listenOptions, async () => {
     diployLogger.banner();
     diployLogger.success(`Server running on port ${port}`);
+    try {
+      await pool.query("SELECT 1");
+    } catch (err) {
+      diployLogger.warn(
+        `[Startup] Database is not reachable, skipping database-backed startup jobs: ${err}`
+      );
+      return;
+    }
     try {
       const { rowCount } = await pool.query(
         `UPDATE users SET status = 'inactive'

@@ -213,7 +213,6 @@ io.on("connection", (socket) => {
         await storage.updateConversation(conversationId, {
           status: "assigned",
           assignedTo: agentId,
-          assignedToName: agentName,
         });
       } catch (error) {
         console.error("Error updating conversation:", error);
@@ -254,7 +253,6 @@ io.on("connection", (socket) => {
         await storage.updateConversation(conversationId, {
           status: "assigned",
           assignedTo: agentId,
-          assignedToName: agentName,
         });
       } catch (error) {
         console.error("Error updating conversation:", error);
@@ -394,8 +392,10 @@ socket.on('leave_conversation', ({ conversationId, userId }) => {
     console.log(`Conversation opened: ${conversationId}`);
 
     try {
-      // Mark messages as read
-      await storage.markMessagesAsRead(conversationId);
+      // Mark conversation unread counter as read
+      await storage.updateConversation(conversationId, {
+        unreadCount: 0,
+      });
 
       socket.to(`conversation:${conversationId}`).emit("messages_read", {
         conversationId,
@@ -454,7 +454,7 @@ socket.on('leave_conversation', ({ conversationId, userId }) => {
 });
 
 // Helper functions
-io.getOnlineAgents = function (siteId?: string) {
+const getOnlineAgents = (siteId?: string) => {
   const agents: any[] = [];
   connectedUsers.forEach((user) => {
     if (user.role === "agent" || user.role === "admin") {
@@ -466,7 +466,7 @@ io.getOnlineAgents = function (siteId?: string) {
   return agents;
 };
 
-io.isConversationActive = function (conversationId: string) {
+const isConversationActive = (conversationId: string) => {
   const room = conversationRooms.get(conversationId);
   return room && room.size > 0;
 };
@@ -504,7 +504,7 @@ app.use(
 // Get online agents
 app.get("/api/agents/online", (req, res) => {
   const { siteId } = req.query;
-  const agents = io.getOnlineAgents?.(siteId as string) || [];
+  const agents = getOnlineAgents(siteId as string);
   res.json({ agents });
 });
 
@@ -570,8 +570,22 @@ app.use((req, res, next) => {
   try {
     await runStartupMigration(pool);
   } catch (err) {
-    console.error("[startup-migration] Fatal — aborting server startup:", err);
-    process.exit(1);
+    const error = err as NodeJS.ErrnoException;
+    const transientNetworkCodes = new Set([
+      "ENOTFOUND",
+      "ENETUNREACH",
+      "ECONNREFUSED",
+      "ETIMEDOUT",
+    ]);
+
+    if (error?.code && transientNetworkCodes.has(error.code)) {
+      console.warn(
+        `[startup-migration] Skipping startup migration because the database is not reachable (${error.code}). The server will continue booting.`,
+      );
+    } else {
+      console.error("[startup-migration] Fatal — aborting server startup:", err);
+      process.exit(1);
+    }
   }
 
   const server = await registerRoutes(app, httpServer);
@@ -612,6 +626,15 @@ app.use((req, res, next) => {
   httpServer.listen(listenOptions, async () => {
     diployLogger.banner();
     diployLogger.success(`Server running on port ${port}`);
+
+    try {
+      await pool.query("SELECT 1");
+    } catch (err) {
+      diployLogger.warn(
+        `[Startup] Database is not reachable, skipping database-backed startup jobs: ${err}`,
+      );
+      return;
+    }
 
     // One-time data fix: mark existing unverified users as inactive
     try {
